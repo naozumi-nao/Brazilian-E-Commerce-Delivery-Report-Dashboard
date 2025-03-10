@@ -7,15 +7,16 @@ from babel.numbers import format_currency
 
 all_df = pd.read_csv("dashboard/main_data.csv")
 
-datetime_columns = ["review_creation_date", "order_delivered_customer_date"]
-all_df.sort_values(by="review_creation_date", inplace=True)
-all_df.reset_index(inplace=True)
+# Fix datetime columns list - it appears to have a duplicate
+datetime_columns = ["order_delivered_customer_date", "review_creation_date"]
+all_df.sort_values(by="order_delivered_customer_date", inplace=True)
+all_df.reset_index(inplace=True, drop=True)
  
 for column in datetime_columns:
     all_df[column] = pd.to_datetime(all_df[column])
 
-min_date = all_df["review_creation_date"].min()
-max_date = all_df["review_creation_date"].max()
+min_date = all_df["order_delivered_customer_date"].min()
+max_date = all_df["order_delivered_customer_date"].max()
  
 with st.sidebar:
     # Menambahkan logo perusahaan
@@ -33,8 +34,10 @@ with st.sidebar:
         value=[min_date, max_date]
     )
 
-main_df = all_df[(all_df["review_creation_date"] >= str(start_date)) & 
-                (all_df["review_creation_date"] <= str(end_date))]
+# Filter data based on the date range
+# Changed to filter on order_delivered_customer_date to match the date picker
+main_df = all_df[(all_df["order_delivered_customer_date"] >= pd.Timestamp(start_date)) & 
+                (all_df["order_delivered_customer_date"] <= pd.Timestamp(end_date))]
 
 # Helper function for histogram & KDE
 def plot_delivery_distribution(df):
@@ -98,12 +101,19 @@ def create_visualizations(df):
 st.header("Brazilian E-Commerce Delivery Report Dashboard")
 st.title("Analisis Waktu Pengiriman")
 
+# Add date range information
+st.write(f"Data ditampilkan untuk periode: **{start_date.strftime('%d %B %Y')}** hingga **{end_date.strftime('%d %B %Y')}**")
+st.write(f"Jumlah data dalam rentang waktu: **{len(main_df)}**")
+
 st.subheader("Visualisasi Distribusi Waktu Pengiriman")
-st.pyplot(plot_delivery_distribution(all_df))
+# Use main_df (filtered data) instead of all_df
+st.pyplot(plot_delivery_distribution(main_df))
 st.divider()
 st.subheader("Analisis Korelasi antara Nilai Ulasan & Waktu Pengiriman")
-correlation = compute_correlation(all_df)
+# Use main_df (filtered data) instead of all_df
+correlation = compute_correlation(main_df)
 st.write(f"**Korelasi antara nilai ulasan & waktu pengiriman:** {correlation:.4f}")
 
-fig = create_visualizations(all_df)
+# Use main_df (filtered data) instead of all_df
+fig = create_visualizations(main_df)
 st.pyplot(fig)
